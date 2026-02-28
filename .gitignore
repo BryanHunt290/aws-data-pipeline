@@ -1,54 +1,26 @@
-# Environment & secrets (never commit)
+# Terraform local files
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+# Terraform variable files containing secrets
+*.tfvars
+
+# Environment variables (contains secrets - use .env.example as template)
 .env
-.env.local
-.env.*.local
-*.pem
-credentials
-secrets.json
-.venv/
-venv/
+
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
+.venv/
+venv/
 *.egg-info/
-.installed.cfg
-*.egg
 
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# Testing
-.coverage
-htmlcov/
-.pytest_cache/
-.mypy_cache/
-
-# OS
+# OS generated files
 .DS_Store
-Thumbs.db
+.Thumbs.db
 
-# Terraform
-.terraform/
-*.tfstate
-*.tfstate.*
-terraform.tfvars
-*.tfvars
-!*.tfvars.example
-lambda_*.zip
+# IDE settings
+.vscode/
+.idea/
