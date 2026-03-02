@@ -9,3 +9,9 @@ variable "environment" {
   type        = string
   default     = "dev"
 }
+
+variable "enable_msk" {
+  description = "Enable MSK Serverless (Kafka) for streaming"
+  type        = bool
+  default     = true
+}

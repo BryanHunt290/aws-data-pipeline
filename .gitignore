@@ -2,6 +2,8 @@
 .terraform/
 *.tfstate
 *.tfstate.backup
+*.zip
+infrastructure/terraform/lambda.zip
 
 # Terraform variable files containing secrets
 *.tfvars

@@ -1,109 +1,117 @@
 """
-MRTS Retail Sales Dashboard - 2 tiles
-- Line chart: Total sales over time (overall or by category)
-- Bar chart: YoY growth by category (latest year)
+Sales Analytics Dashboard - Two tiles
+Tile 1: Time-based (line chart) - Revenue over time
+Tile 2: Categorical (bar chart) - Revenue by category
 
-Uses Athena via pyathena. Set AWS_REGION, ATHENA_WORKGROUP, GLUE_DATABASE, ATHENA_RESULTS_BUCKET in .env
+Connects to Athena (Glue Catalog) or Redshift. Set env vars in .env
 """
 
 import os
 
-from dotenv import load_dotenv
-load_dotenv()
-
 import pandas as pd
 import streamlit as st
-from pyathena import connect
+from dotenv import load_dotenv
 
-# Config from env
-AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
-ATHENA_WORKGROUP = os.getenv("ATHENA_WORKGROUP", "mrts-retail-sales-dev")
-GLUE_DATABASE = os.getenv("GLUE_DATABASE", "mrts_retail_sales_dev_catalog")
+load_dotenv()
+
+# Config: Athena (default) or Redshift
+USE_REDSHIFT = os.getenv("USE_REDSHIFT", "false").lower() == "true"
+GLUE_DATABASE = os.getenv("GLUE_DATABASE", "data_pipeline_demo_catalog")
+ATHENA_WORKGROUP = os.getenv("ATHENA_WORKGROUP", "data-pipeline-demo")
 ATHENA_RESULTS = os.getenv("ATHENA_RESULTS_BUCKET", "")
 
-if not ATHENA_RESULTS:
-    st.error("Set ATHENA_RESULTS_BUCKET (from terraform output athena_results_bucket)")
-    st.stop()
+st.set_page_config(page_title="Sales Analytics", layout="wide")
+st.title("Sales Analytics Dashboard")
+st.caption("Tile 1: Time-based | Tile 2: Categorical")
 
-st.set_page_config(page_title="MRTS Retail Sales", layout="wide")
-st.title("US Census MRTS - Retail Sales Dashboard")
 
-# Athena connection
-@st.cache_resource
-def get_conn():
-    return connect(
-        s3_staging_dir=f"s3://{ATHENA_RESULTS}/athena-results/",
-        region_name=AWS_REGION,
+def get_data_athena():
+    """Query via Athena (Glue Catalog over S3)."""
+    from pyathena import connect
+
+    if not ATHENA_RESULTS:
+        st.error("Set ATHENA_RESULTS_BUCKET in .env (terraform output athena_results_bucket)")
+        return None, None
+
+    conn = connect(
+        s3_staging_dir=f"s3://{ATHENA_RESULTS}/results/",
+        region_name=os.getenv("AWS_REGION", "us-east-1"),
         work_group=ATHENA_WORKGROUP,
     )
 
+    # Glue Crawler for s3://bucket/processed/ creates table "processed"
+    table_name = os.getenv("GLUE_TABLE", "processed")
+    qualified = f'"{GLUE_DATABASE}"."{table_name}"'
 
-def run_query(sql: str) -> pd.DataFrame:
-    conn = get_conn()
-    return pd.read_sql(sql, conn)
-
-
-# Tile 1: Line chart - Total sales over time
-st.subheader("Tile 1: Total Sales Over Time")
-category_filter = st.selectbox(
-    "Category",
-    options=["All", "retail_and_food_services", "retail_total", "food_and_beverage", "motor_vehicle"],
-    index=0,
-)
-
-if category_filter == "All":
-    sql_sales = f"""
-        SELECT year, month, SUM(sales) AS total_sales
-        FROM "{GLUE_DATABASE}".retail_sales
-        WHERE year >= 2015
+    sql_time = f"""
+        SELECT year, month, SUM(total_revenue) AS total_revenue
+        FROM {qualified}
         GROUP BY year, month
         ORDER BY year, month
     """
-else:
-    sql_sales = f"""
-        SELECT year, month, SUM(sales) AS total_sales
-        FROM "{GLUE_DATABASE}".retail_sales
-        WHERE category = '{category_filter}' AND year >= 2015
-        GROUP BY year, month
-        ORDER BY year, month
+    sql_cat = f"""
+        SELECT category, SUM(total_revenue) AS total_revenue
+        FROM {qualified}
+        GROUP BY category
+        ORDER BY total_revenue DESC
     """
 
-try:
-    df_sales = run_query(sql_sales)
-    if not df_sales.empty:
-        df_sales["date"] = pd.to_datetime(
-            df_sales["year"].astype(str) + "-" + df_sales["month"].astype(str).str.zfill(2) + "-01"
-        )
-        st.line_chart(df_sales.set_index("date")[["total_sales"]])
-    else:
-        st.info("No data. Run ingestion and Glue ETL first.")
-except Exception as e:
-    st.error(f"Query failed: {e}")
+    df_time = pd.read_sql(sql_time, conn)
+    df_cat = pd.read_sql(sql_cat, conn)
+    return df_time, df_cat
 
-# Tile 2: Bar chart - YoY growth by category (latest year)
-st.subheader("Tile 2: Year-over-Year Growth by Category (Latest Year)")
+
+def get_data_redshift():
+    """Query via Redshift."""
+    import psycopg2
+
+    conn = psycopg2.connect(
+        host=os.getenv("REDSHIFT_HOST"),
+        port=os.getenv("REDSHIFT_PORT", "5439"),
+        dbname=os.getenv("REDSHIFT_DATABASE", "sales"),
+        user=os.getenv("REDSHIFT_USER"),
+        password=os.getenv("REDSHIFT_PASSWORD"),
+    )
+
+    df_time = pd.read_sql(
+        "SELECT * FROM analytics.fct_sales_over_time ORDER BY year, month",
+        conn
+    )
+    df_cat = pd.read_sql(
+        "SELECT * FROM analytics.fct_sales_by_category ORDER BY total_revenue DESC",
+        conn
+    )
+    return df_time, df_cat
+
 
 try:
-    df_yoy = run_query(f"""
-        WITH yearly AS (
-            SELECT year, category, SUM(sales) AS total_sales
-            FROM "{GLUE_DATABASE}".retail_sales
-            GROUP BY year, category
-        ),
-        with_prior AS (
-            SELECT y.year, y.category, y.total_sales, p.total_sales AS prior_sales
-            FROM yearly y
-            LEFT JOIN yearly p ON y.category = p.category AND y.year = p.year + 1
-        )
-        SELECT year, category,
-            ROUND(100.0 * (total_sales - prior_sales) / NULLIF(prior_sales, 0), 2) AS yoy_growth_pct
-        FROM with_prior
-        WHERE year = (SELECT MAX(year) FROM yearly)
-        ORDER BY yoy_growth_pct DESC
-    """)
-    if not df_yoy.empty:
-        st.bar_chart(df_yoy.set_index("category")[["yoy_growth_pct"]])
+    if USE_REDSHIFT:
+        df_time, df_cat = get_data_redshift()
     else:
-        st.info("No YoY data. Ensure multiple years of data exist.")
+        df_time, df_cat = get_data_athena()
+
+    if df_time is None:
+        st.stop()
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("Tile 1: Revenue Over Time (Line Chart)")
+        if not df_time.empty:
+            df_time["sale_month"] = pd.to_datetime(
+                df_time["year"].astype(str) + "-" + df_time["month"].astype(str).str.zfill(2) + "-01"
+            )
+            st.line_chart(df_time.set_index("sale_month")[["total_revenue"]])
+        else:
+            st.info("No data. Run pipeline and Glue Crawler first.")
+
+    with col2:
+        st.subheader("Tile 2: Revenue by Category (Bar Chart)")
+        if not df_cat.empty:
+            st.bar_chart(df_cat.set_index("category")[["total_revenue"]])
+        else:
+            st.info("No data. Run pipeline and Glue Crawler first.")
+
 except Exception as e:
-    st.error(f"Query failed: {e}")
+    st.error(f"Error: {e}")
+    st.info("Ensure pipeline has run, Glue Crawler has been executed, and .env is configured.")

@@ -20,6 +20,23 @@ resource "aws_iam_role_policy_attachment" "glue" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
 }
 
+resource "aws_iam_role_policy" "glue_msk" {
+  count  = var.enable_msk ? 1 : 0
+  name   = "glue-msk"
+  role   = aws_iam_role.glue.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["kafka-cluster:Connect", "kafka-cluster:DescribeCluster", "kafka-cluster:ReadData"]
+        Resource = [aws_msk_serverless_cluster.main[0].arn]
+      }
+    ]
+  })
+}
+
 resource "aws_iam_role_policy" "glue_s3" {
   name = "glue-s3-kms"
   role = aws_iam_role.glue.id

@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    tables:
+      - name: sales_processed
+        description: Processed sales from S3 (Glue ETL output), loaded via COPY

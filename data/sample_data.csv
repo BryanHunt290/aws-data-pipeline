@@ -1,0 +1,11 @@
+id,product,category,quantity,unit_price,sale_date
+1,Widget A,Electronics,10,29.99,2024-01-15
+2,Widget B,Electronics,5,49.99,2024-01-16
+3,Gadget X,Home,20,14.99,2024-01-17
+4,Gadget Y,Home,8,24.99,2024-01-18
+5,Tool Pro,Hardware,3,79.99,2024-01-19
+6,Tool Basic,Hardware,15,19.99,2024-01-20
+7,Book Alpha,Books,12,9.99,2024-01-21
+8,Book Beta,Books,7,14.99,2024-01-22
+9,Widget A,Electronics,4,29.99,2024-01-23
+10,Gadget X,Home,25,14.99,2024-01-24

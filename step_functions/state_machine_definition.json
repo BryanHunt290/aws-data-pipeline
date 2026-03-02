@@ -1,0 +1,29 @@
+{
+  "Comment": "Data pipeline: Lambda triggers Glue, Glue transforms S3 raw -> processed (Parquet)",
+  "StartAt": "TriggerGlue",
+  "States": {
+    "TriggerGlue": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${lambda_arn}",
+        "Payload": {}
+      },
+      "ResultSelector": {
+        "jobRunId.$": "$.Payload.jobRunId",
+        "jobName.$": "$.Payload.jobName"
+      },
+      "ResultPath": "$.glueResult",
+      "Next": "WaitForGlue"
+    },
+    "WaitForGlue": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:getJobRun.sync",
+      "Parameters": {
+        "JobName.$": "$.glueResult.jobName",
+        "RunId.$": "$.glueResult.jobRunId"
+      },
+      "End": true
+    }
+  }
+}

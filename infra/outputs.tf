@@ -37,3 +37,23 @@ output "athena_results_bucket" {
   description = "S3 bucket for Athena query results"
   value       = aws_s3_bucket.athena.bucket
 }
+
+output "msk_bootstrap_servers" {
+  description = "MSK Serverless bootstrap servers for Kafka clients"
+  value       = try(aws_msk_serverless_cluster.main[0].bootstrap_broker_sasl_iam, null)
+}
+
+output "msk_cluster_arn" {
+  description = "MSK Serverless cluster ARN"
+  value       = try(aws_msk_serverless_cluster.main[0].arn, null)
+}
+
+output "lambda_trigger_arn" {
+  description = "Lambda ARN for S3-triggered batch pipeline"
+  value       = aws_lambda_function.trigger_pipeline.arn
+}
+
+output "lambda_start_streaming_arn" {
+  description = "Lambda ARN to start Glue Streaming job"
+  value       = try(aws_lambda_function.start_streaming[0].arn, null)
+}
