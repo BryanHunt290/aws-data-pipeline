@@ -1,0 +1,6 @@
+name: raw.offer_count_trend
+type: athena.seed
+description: Offer count and 30-day trend by ASIN
+
+parameters:
+  path: ../../seeds/offer_count_trend.csv

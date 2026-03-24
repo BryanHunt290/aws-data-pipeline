@@ -1,0 +1,14 @@
+name: raw.buy_box_latest
+type: athena.seed
+description: Latest buy box / new price by ASIN
+
+parameters:
+  path: ../../seeds/buy_box_latest.csv
+
+columns:
+  - name: asin
+    checks:
+      - name: not_null
+  - name: buy_box_price
+    checks:
+      - name: non_negative

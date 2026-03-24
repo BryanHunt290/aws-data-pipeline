@@ -1,0 +1,6 @@
+name: raw.rank_trend
+type: athena.seed
+description: 30/90-day rank and rank trend by ASIN
+
+parameters:
+  path: ../../seeds/rank_trend.csv

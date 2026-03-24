@@ -1,0 +1,9 @@
+# Bruin pipeline - wholesale opportunities and Keepa transforms
+# Run ingestion: bruin run assets/ingest_keepa_watchlist.py (writes JSONL to S3 keepa/raw/)
+# Run Keepa curated/mart: bruin run mart.keepa_opportunities --include-deps
+# Run wholesale mart: bruin run mart.wholesale_opportunities --include-deps
+
+name: wholesale-opportunities
+
+default_connections:
+  athena: athena-default

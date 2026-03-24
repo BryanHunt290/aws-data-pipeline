@@ -1,0 +1,35 @@
+# Terraform local files
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfstate.*.backup
+*.zip
+infrastructure/terraform/lambda.zip
+
+# Terraform variable files containing secrets
+*.tfvars
+
+# Environment variables (contains secrets - use .env.example as template)
+.env
+
+# Bruin config (may contain credentials - use .bruin.yml.example as template)
+.bruin.yml
+
+# dbt
+dbt/logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+*.egg-info/
+
+# OS generated files
+.DS_Store
+.Thumbs.db
+
+# IDE settings
+.vscode/
+.idea/

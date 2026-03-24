@@ -1,0 +1,6 @@
+name: raw.watchlist
+type: athena.seed
+description: Watchlist of ASINs to monitor for wholesale opportunities
+
+parameters:
+  path: ../../seeds/watchlist.csv

@@ -1,0 +1,14 @@
+name: raw.supplier_cost
+type: athena.seed
+description: Supplier cost by ASIN (CSV in S3 or local)
+
+parameters:
+  path: ../../seeds/supplier_cost.csv
+
+columns:
+  - name: asin
+    checks:
+      - name: not_null
+  - name: supplier_cost
+    checks:
+      - name: non_negative

@@ -1,0 +1,15 @@
+# Copy to ~/.dbt/profiles.yml - use env vars for credentials
+# REDSHIFT_HOST, REDSHIFT_USER, REDSHIFT_PASSWORD from terraform output
+
+sales_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: redshift
+      host: "{{ env_var('REDSHIFT_HOST') }}"
+      port: 5439
+      user: "{{ env_var('REDSHIFT_USER') }}"
+      password: "{{ env_var('REDSHIFT_PASSWORD') }}"
+      dbname: sales
+      schema: analytics
+      threads: 2

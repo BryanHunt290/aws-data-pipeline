@@ -1,0 +1,15 @@
+# Copy to .bruin.yml and replace REPLACE_ACCOUNT_ID with your AWS account ID
+# Get it: aws sts get-caller-identity --query Account --output text
+# Or: cd infrastructure/terraform && terraform output athena_results_bucket
+
+default_environment: dev
+
+environments:
+  dev:
+    connections:
+      athena:
+        - name: athena-default
+          region: us-east-1
+          database: data_pipeline_demo_catalog
+          profile: default
+          query_results_path: s3://data-pipeline-demo-athena-REPLACE_ACCOUNT_ID/results/
